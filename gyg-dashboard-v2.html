@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GYG Trading Dashboard v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --red:#FA4F2D; --red-hdr:#FF5533; --maroon:#3E0A00;
+  --off-white:#FDFAF5; --peach:#FEDBD0; --lavender:#DAD2F4;
+  --sand:#F7F2EA; --border:rgba(62,10,0,0.08);
+  --muted:rgba(26,6,0,0.44); --shadow:0 2px 12px rgba(62,10,0,0.07);
+  --ease:0.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter','Helvetica Neue',Arial,sans-serif;background:var(--off-white);color:var(--maroon);display:flex;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--maroon);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;}
+.sidebar-logo-g{width:30px;height:30px;border-radius:7px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:white;font-style:italic;letter-spacing:-0.04em;flex-shrink:0;}
+.sidebar-wordmark{font-size:13px;font-weight:700;color:var(--off-white);letter-spacing:0.01em;line-height:1;}
+.sidebar-wordmark span{display:block;font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(253,250,245,0.35);margin-top:2px;}
+.nav-section-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(253,250,245,0.28);padding:20px 18px 6px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;font-size:12.5px;font-weight:500;color:rgba(253,250,245,0.55);cursor:pointer;border-left:2.5px solid transparent;transition:all var(--ease);user-select:none;}
+.nav-item svg{flex-shrink:0;}
+.nav-item:hover{color:var(--off-white);background:rgba(255,255,255,0.05);}
+.nav-item.active{color:var(--off-white);background:rgba(250,79,45,0.15);border-left-color:var(--red);font-weight:600;}
+.nav-divider{height:1px;background:rgba(255,255,255,0.06);margin:10px 18px;}
+.sidebar-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,0.07);}
+.user-row{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:600;color:var(--off-white);}
+.user-role{font-size:10px;color:rgba(253,250,245,0.38);}
+
+/* MAIN SHELL */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{height:54px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 26px;gap:14px;position:sticky;top:0;z-index:50;}
+.topbar-left{flex:1;}
+.topbar-page-title{font-size:14px;font-weight:700;color:var(--maroon);}
+.topbar-page-sub{font-size:10.5px;color:var(--muted);margin-top:1px;}
+.period-tabs{display:flex;gap:2px;background:var(--sand);border-radius:8px;padding:3px;}
+.period-tab{padding:5px 11px;font-size:10.5px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--muted);transition:all var(--ease);user-select:none;}
+.period-tab.active{background:white;color:var(--maroon);box-shadow:0 1px 4px rgba(0,0,0,0.07);}
+.closed-badge{background:rgba(62,10,0,0.07);color:var(--muted);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;white-space:nowrap;}
+
+/* VIEWS */
+.view{display:none;flex:1;}
+.view.active{display:block;animation:fadeUp 0.22s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spinOnce{to{transform:rotate(360deg)}}
+
+/* VERDICT BAR */
+.verdict-bar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.12);position:relative;z-index:2;}
+.verdict-rag{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.rag-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.rag-label{font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;}
+.rag-green .rag-dot{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,0.5);}
+.rag-green .rag-label{color:#4ade80;}
+.rag-amber .rag-dot{background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,0.5);}
+.rag-amber .rag-label{color:#fbbf24;}
+.rag-red .rag-dot{background:#f87171;box-shadow:0 0 6px rgba(248,113,113,0.5);}
+.rag-red .rag-label{color:#f87171;}
+.verdict-text{font-size:12.5px;font-weight:500;color:rgba(253,250,245,0.82);line-height:1.4;}
+.verdict-text strong{color:var(--off-white);font-weight:700;}
+.verdict-sep{width:1px;height:18px;background:rgba(255,255,255,0.14);flex-shrink:0;}
+.verdict-week{font-size:10px;font-weight:600;letter-spacing:0.06em;color:rgba(253,250,245,0.36);margin-left:auto;flex-shrink:0;}
+
+/* AUDIENCE TAG */
+.audience-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(62,10,0,0.06);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--muted);}
+.audience-tag svg{flex-shrink:0;}
+
+/* CONFIDENCE RIBBON */
+.confidence-ribbon{display:flex;align-items:flex-start;gap:10px;background:rgba(251,191,36,0.08);border-bottom:1px solid rgba(251,191,36,0.2);padding:9px 26px;font-size:11px;color:rgba(62,10,0,0.7);}
+.confidence-ribbon .cr-icon{width:18px;height:18px;border-radius:5px;background:rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.confidence-ribbon strong{font-weight:700;color:var(--maroon);}
+.cr-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:20px;padding:2px 7px;font-size:9.5px;font-weight:700;color:#92400E;margin-left:4px;white-space:nowrap;}
+
+/* COMMENTARY BLOCK */
+.commentary-block{background:var(--maroon);border-radius:12px;padding:20px 22px;margin-bottom:20px;}
+.cb-headline{font-size:14px;font-weight:700;color:var(--off-white);margin-bottom:14px;line-height:1.4;}
+.cb-rows{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.cb-row{padding:10px 14px;border-right:1px solid rgba(255,255,255,0.08);}
+.cb-row:last-child{border-right:none;}
+.cb-row-label{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(250,79,45,0.75);margin-bottom:4px;}
+.cb-row-text{font-size:11.5px;color:rgba(253,250,245,0.7);line-height:1.5;}
+.cb-watch{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:flex-start;gap:8px;}
+.cb-watch-icon{width:20px;height:20px;border-radius:5px;background:rgba(250,79,45,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cb-watch-text{font-size:11px;color:rgba(253,250,245,0.6);line-height:1.45;}
+.cb-watch-text strong{color:rgba(250,79,45,0.9);font-weight:700;}
+
+/* PACING TO PLAN */
+.pacing-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.pacing-card{background:white;border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+.pacing-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.pacing-title{font-size:12px;font-weight:700;color:var(--maroon);}
+.pacing-period{font-size:10px;color:var(--muted);}
+.pacing-vals{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+.pacing-actual{font-size:22px;font-weight:800;color:var(--maroon);letter-spacing:-0.02em;}
+.pacing-target{font-size:12px;color:var(--muted);}
+.pacing-bar-bg{height:8px;background:var(--sand);border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.pacing-bar-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+.pacing-footer{display:flex;align-items:center;justify-content:space-between;}
+.pacing-pct{font-size:11px;font-weight:700;color:var(--maroon);}
+.pacing-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+
+/* LANDING PAGE */
+.lp-hero{background:var(--maroon);padding:0 28px 0;position:relative;overflow:hidden;}
+.lp-hero::before{content:'';position:absolute;top:-80px;right:-60px;width:380px;height:380px;background:radial-gradient(circle,rgba(250,79,45,0.16) 0%,transparent 65%);pointer-events:none;}
+.lp-hero::after{content:'';position:absolute;bottom:0;left:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(218,210,244,0.07) 0%,transparent 65%);pointer-events:none;}
+.lp-eyebrow{font-size:9.5px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(250,79,45,0.7);padding-top:28px;position:relative;z-index:1;}
+.lp-greeting{font-size:28px;font-weight:800;color:var(--off-white);letter-spacing:-0.025em;line-height:1.1;margin-bottom:6px;margin-top:6px;position:relative;z-index:1;}
+.lp-greeting em{color:var(--red);font-style:normal;}
+.lp-subline{font-size:13px;color:rgba(253,250,245,0.48);margin-bottom:0;position:relative;z-index:1;}
+.lp-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);position:relative;z-index:1;margin-top:22px;}
+.lp-kpi-cell{padding:14px 18px;border-top:1px solid rgba(255,255,255,0.06);border-right:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:background var(--ease);}
+.lp-kpi-cell:last-child{border-right:none;}
+.lp-kpi-cell:hover{background:rgba(250,79,45,0.10);}
+.lp-kpi-lbl{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(253,250,245,0.35);margin-bottom:4px;}
+.lp-kpi-val{font-size:20px;font-weight:800;color:var(--off-white);letter-spacing:-0.02em;}
+.lp-kpi-plan{font-size:10px;font-weight:700;margin-top:2px;}
+.lp-kpi-plan.up{color:#4ade80;}
+.lp-kpi-plan.down{color:#f87171;}
+.lp-kpi-plan.flat{color:rgba(253,250,245,0.4);}
+.lp-kpi-ly{font-size:9.5px;color:rgba(253,250,245,0.28);margin-top:1px;}
+.lp-body{padding:24px 28px 32px;}
+.lp-sec-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--red);display:flex;align-items:center;gap:6px;margin-bottom:14px;}
+.lp-sec-dot{width:6px;height:6px;background:var(--red);border-radius:2px;}
+.lp-sec-rule{height:1px;background:var(--border);margin-bottom:16px;}
+.lp-nav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px;}
+.lp-nav-card{background:white;border:1px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:transform var(--ease),box-shadow var(--ease),border-color var(--ease);position:relative;overflow:hidden;}
+.lp-nav-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--card-accent,var(--red));opacity:0;transition:opacity var(--ease);}
+.lp-nav-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(62,10,0,0.10);border-color:rgba(62,10,0,0.14);}
+.lp-nav-card:hover::before{opacity:1;}
+.lp-nav-card:hover .lp-card-arrow{opacity:1;transform:translate(2px,-2px);}
+.lp-card-icon-wrap{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.lp-card-title{font-size:12.5px;font-weight:700;color:var(--maroon);margin-bottom:4px;}
+.lp-card-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+.lp-card-footer{display:flex;align-items:baseline;gap:6px;padding-top:12px;border-top:1px solid var(--border);position:relative;}
+.lp-card-arrow{position:absolute;top:12px;right:0;opacity:0;transform:translate(-2px,2px);transition:all var(--ease);}
+.lp-card-metric-val{font-size:15px;font-weight:800;color:var(--maroon);letter-spacing:-0.01em;}
+.lp-card-metric-lbl{font-size:10px;color:var(--muted);font-weight:500;}
+.lp-card-metric-chg{margin-left:auto;font-size:10px;font-weight:700;}
+.lp-card-metric-chg.up{color:#059669;}
+.lp-card-metric-chg.down{color:#dc2626;}
+
+/* BUSINESS REVIEWS */
+.biz-reviews{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:26px;}
+.biz-rev-card{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.biz-rev-cadence{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);margin-bottom:5px;}
+.biz-rev-name{font-size:12.5px;font-weight:700;color:var(--maroon);margin-bottom:3px;}
+.biz-rev-desc{font-size:10.5px;color:var(--muted);line-height:1.45;}
+.biz-rev-arrow{display:flex;align-items:center;gap:4px;margin-top:8px;font-size:9.5px;font-weight:600;color:rgba(62,10,0,0.3);}
+
+/* CONSOLIDATED WATCH STACK */
+.watch-stack{display:flex;flex-direction:column;gap:8px;}
+.watch-item{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;}
+.watch-item:hover{border-color:rgba(62,10,0,0.16);}
+.watch-sev{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.watch-content{}
+.watch-title{font-size:12.5px;font-weight:700;color:var(--maroon);margin-bottom:3px;}
+.watch-why{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.watch-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.watch-owner{font-size:10px;font-weight:700;color:var(--maroon);background:var(--sand);padding:2px 8px;border-radius:20px;}
+.watch-due{font-size:10px;color:var(--muted);}
+.watch-action{font-size:11px;color:var(--muted);line-height:1.45;margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);}
+.watch-action strong{color:var(--maroon);font-weight:600;}
+.watch-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+
+/* SHARED DEEP DIVE STYLES */
+.view-inner{padding:24px 28px 36px;}
+.sec-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sec-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sec-label{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--red);}
+.sec-dot{width:6px;height:6px;background:var(--red);border-radius:2px;flex-shrink:0;}
+.sec-rule{height:1px;background:var(--border);margin-bottom:16px;}
+.view-hero{background:var(--maroon);border-radius:14px;padding:22px 26px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
+.view-hero::after{content:'';position:absolute;top:-40px;right:-40px;width:220px;height:220px;background:radial-gradient(circle,rgba(250,79,45,0.22) 0%,transparent 68%);pointer-events:none;}
+.view-hero-text{position:relative;z-index:1;}
+.view-hero-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(250,79,45,0.75);margin-bottom:5px;}
+.view-hero-title{font-size:20px;font-weight:800;color:var(--off-white);letter-spacing:-0.01em;margin-bottom:4px;}
+.view-hero-sub{font-size:12px;color:rgba(253,250,245,0.48);}
+.view-hero-metrics{display:flex;gap:28px;position:relative;z-index:1;}
+.view-hero-m{text-align:right;}
+.view-hero-m-val{font-size:22px;font-weight:800;color:var(--off-white);letter-spacing:-0.02em;}
+.view-hero-m-lbl{font-size:9px;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:rgba(253,250,245,0.38);margin-top:1px;}
+.view-hero-m-chg{font-size:10.5px;font-weight:700;color:#4ade80;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.kpi-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px;}
+.kpi-card{background:white;border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);transition:transform var(--ease),box-shadow var(--ease);position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--red);opacity:0;transition:opacity var(--ease);}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(62,10,0,0.09);}
+.kpi-card:hover::before{opacity:1;}
+.kpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.kpi-val{font-size:26px;font-weight:800;color:var(--maroon);letter-spacing:-0.02em;line-height:1;margin-bottom:8px;}
+.kpi-foot{display:flex;align-items:center;justify-content:space-between;}
+.badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;}
+.badge.up{background:rgba(5,150,105,0.10);color:#059669;}
+.badge.down{background:rgba(220,38,38,0.09);color:#dc2626;}
+.badge.flat{background:rgba(62,10,0,0.06);color:var(--muted);}
+.badge.warn{background:rgba(217,119,6,0.10);color:#92400E;}
+.kpi-sub{font-size:10px;color:var(--muted);}
+.chart-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.chart-row21{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:20px;}
+.chart-row12{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:20px;}
+.chart-card{background:white;border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.chart-title{font-size:12.5px;font-weight:700;color:var(--maroon);margin-bottom:3px;}
+.chart-sub{font-size:10.5px;color:var(--muted);}
+.chips{display:flex;gap:3px;}
+.chip{padding:4px 10px;border-radius:20px;font-size:9.5px;font-weight:700;border:1px solid var(--border);color:var(--muted);background:white;cursor:pointer;transition:all var(--ease);letter-spacing:0.04em;}
+.chip:hover,.chip.active{background:var(--red);color:white;border-color:var(--red);}
+.mkt-table{width:100%;border-collapse:collapse;}
+.mkt-table th{font-size:9.5px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--off-white);background:var(--red-hdr);padding:9px 14px;text-align:left;}
+.mkt-table th:first-child{border-radius:8px 0 0 0;}
+.mkt-table th:last-child{border-radius:0 8px 0 0;}
+.mkt-table td{font-size:12px;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--maroon);}
+.mkt-table tr:hover td{background:var(--sand);}
+.mkt-table tr:last-child td{border-bottom:none;}
+.tbadge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.tbadge.up{background:rgba(5,150,105,0.10);color:#059669;}
+.tbadge.down{background:rgba(220,38,38,0.09);color:#dc2626;}
+.tbadge.flat{background:rgba(62,10,0,0.06);color:var(--muted);}
+.tbadge.warn{background:rgba(217,119,6,0.10);color:#92400E;}
+.stat-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat-row4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:white;border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+.stat-lbl{font-size:9.5px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-val{font-size:22px;font-weight:800;color:var(--maroon);letter-spacing:-0.02em;}
+.stat-delta{font-size:11px;color:var(--muted);margin-top:3px;}
+.stat-delta .g{font-weight:700;color:#059669;}
+.stat-delta .r{font-weight:700;color:#dc2626;}
+.stat-delta .a{font-weight:700;color:#D97706;}
+.bar-cell{display:flex;align-items:center;gap:7px;}
+.bar-bg{flex:1;height:4px;background:var(--sand);border-radius:2px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--red);border-radius:2px;}
+.geo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.geo-card{background:white;border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--shadow);transition:transform var(--ease),border-color var(--ease);cursor:pointer;}
+.geo-card:hover{transform:translateY(-2px);border-color:rgba(62,10,0,0.16);}
+.geo-card.hi{border-color:var(--red);}
+.geo-flag{font-size:20px;margin-bottom:6px;}
+.geo-name{font-size:11px;font-weight:700;color:var(--maroon);margin-bottom:2px;}
+.geo-gmv{font-size:15px;font-weight:800;color:var(--maroon);letter-spacing:-0.01em;}
+.geo-plan{font-size:10px;font-weight:700;margin-top:2px;}
+.geo-plan.up{color:#059669;}
+.geo-plan.down{color:#dc2626;}
+.funnel{display:flex;flex-direction:column;gap:8px;}
+.funnel-row{display:flex;align-items:center;gap:10px;}
+.funnel-lbl{font-size:12px;font-weight:600;color:var(--maroon);width:108px;flex-shrink:0;}
+.funnel-bg{flex:1;height:22px;background:var(--sand);border-radius:4px;overflow:hidden;}
+.funnel-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:9px;transition:width 0.9s ease;}
+.funnel-fill span{font-size:10px;font-weight:700;color:white;white-space:nowrap;}
+.funnel-num{font-size:12px;font-weight:700;color:var(--maroon);width:64px;text-align:right;flex-shrink:0;}
+.funnel-cvr{font-size:10px;color:var(--muted);width:46px;text-align:right;flex-shrink:0;}
+.score-table{width:100%;border-collapse:collapse;}
+.score-table th{font-size:9.5px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--off-white);background:var(--red-hdr);padding:9px 14px;text-align:left;}
+.score-table th:first-child{border-radius:8px 0 0 0;}
+.score-table th:last-child{border-radius:0 8px 0 0;}
+.score-table td{font-size:12px;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--maroon);}
+.score-table tr:hover td{background:var(--sand);}
+.score-table tr:last-child td{border-bottom:none;}
+
+/* GEO TABS */
+.geo-tabs{display:flex;gap:2px;background:var(--sand);border-radius:8px;padding:3px;width:fit-content;margin-bottom:16px;}
+.geo-tab{padding:5px 14px;font-size:10.5px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--muted);transition:all var(--ease);}
+.geo-tab.active{background:white;color:var(--maroon);box-shadow:0 1px 4px rgba(0,0,0,0.07);}
+.geo-panel{display:none;}
+.geo-panel.active{display:block;}
+
+/* FLOOR INDICATOR */
+.floor-cell{display:flex;align-items:center;gap:6px;}
+.floor-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.floor-dot.above{background:#059669;}
+.floor-dot.below{background:#dc2626;}
+.floor-dot.near{background:#D97706;}
+
+/* ACTION LOG */
+.action-log-table{width:100%;border-collapse:collapse;}
+.action-log-table th{font-size:9.5px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--off-white);background:var(--maroon);padding:9px 14px;text-align:left;}
+.action-log-table th:first-child{border-radius:8px 0 0 0;}
+.action-log-table th:last-child{border-radius:0 8px 0 0;}
+.action-log-table td{font-size:11.5px;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--maroon);vertical-align:middle;}
+.action-log-table tr:hover td{background:var(--sand);}
+.action-log-table tr:last-child td{border-bottom:none;}
+.mbr-flag{font-size:9px;font-weight:700;background:rgba(250,79,45,0.12);color:var(--red);padding:2px 7px;border-radius:20px;white-space:nowrap;}
+
+/* CHANNEL DEEP DIVE */
+.channel-deep{display:flex;flex-direction:column;gap:16px;margin-bottom:20px;}
+.channel-section{background:white;border:1px solid var(--border);border-radius:12px;padding:20px;}
+.channel-sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.channel-sec-title{font-size:13px;font-weight:700;color:var(--maroon);}
+.channel-sec-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.channel-sec-badge{font-size:9.5px;font-weight:700;padding:4px 10px;border-radius:20px;}
+.channel-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.channel-stat{background:var(--sand);border-radius:9px;padding:12px 14px;}
+.channel-stat-lbl{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.channel-stat-val{font-size:18px;font-weight:800;color:var(--maroon);letter-spacing:-0.01em;}
+.channel-stat-delta{font-size:10px;margin-top:2px;}
+.channel-commentary{font-size:11.5px;color:var(--muted);line-height:1.55;padding:12px;background:var(--sand);border-radius:8px;}
+
+/* SUPPLY HEALTH */
+.health-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.health-card{background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.health-market{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.health-score{font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;}
+.health-score.good{color:#059669;}
+.health-score.ok{color:#D97706;}
+.health-score.bad{color:#dc2626;}
+.health-bar-bg{height:5px;background:var(--sand);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.health-bar-fill{height:100%;border-radius:3px;}
+.health-meta{font-size:10.5px;color:var(--muted);}
+
+/* LOZENGE ALERT */
+.lp-alert{display:flex;align-items:flex-start;gap:11px;background:white;border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color var(--ease),box-shadow var(--ease);}
+.lp-alert:hover{border-color:rgba(62,10,0,0.18);box-shadow:0 2px 8px rgba(62,10,0,0.06);}
+.lp-alert-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.lp-alert-body{flex:1;}
+.lp-alert-title{font-size:12px;font-weight:700;color:var(--maroon);margin-bottom:2px;}
+.lp-alert-msg{font-size:11px;color:var(--muted);line-height:1.45;}
+.lp-alert-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.lp-alert-badge{font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 8px;border-radius:20px;}
+.lp-alert-time{font-size:10px;color:var(--muted);}
+
+@page{size:A4;margin:0;}
+@media print{
+  html,body{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-g">G</div>
+    <div class="sidebar-wordmark">GetYourGuide<span>Trading Dashboard</span></div>
+  </div>
+  <div class="nav-section-label">Overview</div>
+  <div class="nav-item active" id="nav-home" onclick="nav('home')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.5L7 1.5l5.5 5V12.5a1 1 0 0 1-1 1H9V9H5v4.5H2.5a1 1 0 0 1-1-1V6.5z"/></svg>
+    Home
+  </div>
+  <div class="nav-item" id="nav-exec" onclick="nav('exec')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+    Executive overview
+    <span style="margin-left:auto;font-size:9px;font-weight:600;color:rgba(253,250,245,0.3);background:rgba(255,255,255,0.07);padding:2px 6px;border-radius:20px;">Exec</span>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-section-label">Deep Dives</div>
+  <div class="nav-item" id="nav-revenue" onclick="nav('revenue')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 4.5,6 7.5,8 12.5,2.5"/><polyline points="10,2.5 12.5,2.5 12.5,5"/></svg>
+    Revenue
+  </div>
+  <div class="nav-item" id="nav-bookings" onclick="nav('bookings')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="3" width="11" height="10" rx="1.5"/><path d="M4.5 3V1.5M9.5 3V1.5M1.5 7h11"/></svg>
+    Bookings
+  </div>
+  <div class="nav-item" id="nav-markets" onclick="nav('markets')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5.5"/><path d="M1.5 7h11M7 1.5c-2 1.8-3 3.6-3 5.5s1 3.7 3 5.5M7 1.5c2 1.8 3 3.6 3 5.5s-1 3.7-3 5.5"/></svg>
+    Markets &amp; Corridors
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-section-label">Functions</div>
+  <div class="nav-item" id="nav-marketing" onclick="nav('marketing')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10V5l5-3 5 3v5l-5 3z"/><path d="M7 14V7M2 5l5 2 5-2"/></svg>
+    Marketing
+  </div>
+  <div class="nav-item" id="nav-supply" onclick="nav('supply')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="11" height="7.5" rx="1.2"/><path d="M4.5 5V3.5a2.5 2.5 0 0 1 5 0V5"/></svg>
+    Supply
+  </div>
+  <div class="nav-item" id="nav-channels" onclick="nav('channels')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="7" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="11" cy="11" r="1.5"/><path d="M4.5 7l5-3.5M4.5 7l5 3.5"/></svg>
+    Channels deep dive
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-item" id="nav-alerts" onclick="nav('alerts')">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1.5v1M7 1.5a4.5 4.5 0 0 1 4.5 4.5v2.5L12.5 11h-11L2.5 9.5V6A4.5 4.5 0 0 1 7 1.5z"/><path d="M5 11a2 2 0 0 0 4 0"/></svg>
+    Alerts &amp; actions
+    <span style="margin-left:auto;background:rgba(250,79,45,0.18);color:var(--peach);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;">3</span>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="user-avatar">RS</div>
+      <div><div class="user-name">Rishabh Shahi</div><div class="user-role">Trading Lead</div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-page-title" id="page-title">Home</div>
+      <div class="topbar-page-sub" id="page-sub">As of CW21 close · 26 May 2026</div>
+    </div>
+    <div class="period-tabs">
+      <div class="period-tab active" onclick="setPeriod(this)">WTD</div>
+      <div class="period-tab" onclick="setPeriod(this)">MTD</div>
+      <div class="period-tab" onclick="setPeriod(this)">QTD</div>
+      <div class="period-tab" onclick="setPeriod(this)">YTD</div>
+    </div>
+    <span class="closed-badge">CW21 closed</span>
+  </header>
+
+  <!-- ═══════ HOME ═══════ -->
+  <div class="view active" id="view-home">
+    <div class="lp-hero">
+      <!-- VERDICT BAR -->
+      <div class="verdict-bar">
+        <div class="verdict-rag rag-amber">
+          <div class="rag-dot"></div>
+          <div class="rag-label">Amber</div>
+        </div>
+        <div class="verdict-sep"></div>
+        <div class="verdict-text"><strong>CW21 trading: on track, 2 watches.</strong> GMV is €42.1M, 3.9% ahead of plan. ROAS outperforming at 4.8x. Spain commission rate drift (3rd consecutive week) and US ABV softness need owner action this week.</div>
+        <div class="verdict-week">CW21 · WTD primary</div>
+      </div>
+      <div class="lp-eyebrow" style="margin-top:20px;">GetYourGuide · Trading Dashboard · Week 21, 2026</div>
+      <div class="lp-greeting">Good morning, <em>Rishabh.</em></div>
+      <div class="lp-subline">Week is tracking ahead of plan. Two items need attention before close.</div>
+      <div class="lp-kpi-strip">
+        <div class="lp-kpi-cell" onclick="nav('exec')">
+          <div class="lp-kpi-lbl">GMV WTD</div>
+          <div class="lp-kpi-val">€42.1M</div>
+          <div class="lp-kpi-plan up">▲ +3.9% vs plan</div>
+          <div class="lp-kpi-ly">+14.2% vs LY</div>
+        </div>
+        <div class="lp-kpi-cell" onclick="nav('revenue')">
+          <div class="lp-kpi-lbl">Net Revenue</div>
+          <div class="lp-kpi-val">€6.3M</div>
+          <div class="lp-kpi-plan up">▲ +2.1% vs plan</div>
+          <div class="lp-kpi-ly">+11.8% vs LY</div>
+        </div>
+        <div class="lp-kpi-cell" onclick="nav('exec')">
+          <div class="lp-kpi-lbl">CM1 WTD</div>
+          <div class="lp-kpi-val">€4.8M</div>
+          <div class="lp-kpi-plan up">▲ +1.4% vs plan</div>
+          <div class="lp-kpi-ly">+9.1% vs LY</div>
+        </div>
+        <div class="lp-kpi-cell" onclick="nav('marketing')">
+          <div class="lp-kpi-lbl">ROAS</div>
+          <div class="lp-kpi-val">4.8x</div>
+          <div class="lp-kpi-plan up">▲ +0.3x vs plan</div>
+          <div class="lp-kpi-ly">+0.4x vs LY</div>
+        </div>
+      </div>
+    </div>
+    <div class="lp-body">
+      <div class="lp-sec-label"><div class="lp-sec-dot"></div>Where do you want to go?</div>
+      <div class="lp-sec-rule"></div>
+      <div class="lp-nav-grid">
+        <div class="lp-nav-card" style="--card-accent:#FA4F2D" onclick="nav('exec')">
+          <div class="lp-card-icon-wrap" style="background:rgba(250,79,45,0.09)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FA4F2D" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></svg></div>
+          <div class="lp-card-title">Executive overview</div>
+          <div class="lp-card-desc">Full scorecard, pacing to plan, CM1, KPIs vs budget, 13-week trend.</div>
+          <div class="lp-card-footer"><svg class="lp-card-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#FA4F2D" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h8M8 3.5l3 3-3 3"/></svg><div class="lp-card-metric-val">€42.1M</div><div class="lp-card-metric-lbl">GMV WTD</div><div class="lp-card-metric-chg up">▲ +3.9% plan</div></div>
+        </div>
+        <div class="lp-nav-card" style="--card-accent:#4A3060" onclick="nav('marketing')">
+          <div class="lp-card-icon-wrap" style="background:rgba(74,48,96,0.09)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#4A3060" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V6l6-4 6 4v6l-6 4z"/><path d="M8 16V8M2 6l6 2 6-2"/></svg></div>
+          <div class="lp-card-title">Marketing</div>
+          <div class="lp-card-desc">Channel ROAS, below-floor portfolios, incrementality caveats.</div>
+          <div class="lp-card-footer"><svg class="lp-card-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#4A3060" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h8M8 3.5l3 3-3 3"/></svg><div class="lp-card-metric-val">4.8x</div><div class="lp-card-metric-lbl">ROAS WTD</div><div class="lp-card-metric-chg up">▲ +0.3x plan</div></div>
+        </div>
+        <div class="lp-nav-card" style="--card-accent:#059669" onclick="nav('supply')">
+          <div class="lp-card-icon-wrap" style="background:rgba(5,150,105,0.09)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#059669" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="6" width="13" height="8.5" rx="1.5"/><path d="M5 6V4a3 3 0 0 1 6 0v2"/></svg></div>
+          <div class="lp-card-title">Supply</div>
+          <div class="lp-card-desc">Supplier health, activations, economics by market, corridor depth.</div>
+          <div class="lp-card-footer"><svg class="lp-card-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#059669" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h8M8 3.5l3 3-3 3"/></svg><div class="lp-card-metric-val">87</div><div class="lp-card-metric-lbl">Health index</div><div class="lp-card-metric-chg up">▲ +2 WoW</div></div>
+        </div>
+        <div class="lp-nav-card" style="--card-accent:#6B57C8" onclick="nav('channels')">
+          <div class="lp-card-icon-wrap" style="background:rgba(107,87,200,0.09)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#6B57C8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="3.5" cy="8" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5.5 8l5-3.5M5.5 8l5 4"/></svg></div>
+          <div class="lp-card-title">Channels deep dive</div>
+          <div class="lp-card-desc">PS tROAS re-steer, Partnerships tiering, SEO recovery.</div>
+          <div class="lp-card-footer"><svg class="lp-card-arrow" width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#6B57C8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h8M8 3.5l3 3-3 3"/></svg><div class="lp-card-metric-val">3 of 3</div><div class="lp-card-metric-lbl">Actions live</div><div class="lp-card-metric-chg up">On track</div></div>
+        </div>
+      </div>
+
+      <!-- BUSINESS REVIEWS CADENCE -->
+      <div class="lp-sec-label"><div class="lp-sec-dot"></div>Business review cadence</div>
+      <div class="lp-sec-rule"></div>
+      <div class="biz-reviews" style="margin-bottom:26px;">
+        <div class="biz-rev-card" style="border-top:2.5px solid var(--red);">
+          <div class="biz-rev-cadence">Weekly · Mon</div>
+          <div class="biz-rev-name">WBR</div>
+          <div class="biz-rev-desc">Operational pulse. What changed, what it means for steering decisions.</div>
+          <div class="biz-rev-arrow"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 5h8M6 2l3 3-3 3"/></svg> This dashboard</div>
+        </div>
+        <div class="biz-rev-card">
+          <div class="biz-rev-cadence">Monthly · wk 2</div>
+          <div class="biz-rev-name">ABR</div>
+          <div class="biz-rev-desc">Activity-level trading review. Top destinations, category performance.</div>
+          <div class="biz-rev-arrow"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 5h8M6 2l3 3-3 3"/></svg> Supply owns</div>
+        </div>
+        <div class="biz-rev-card">
+          <div class="biz-rev-cadence">Monthly · wk 3</div>
+          <div class="biz-rev-name">Supply review</div>
+          <div class="biz-rev-desc">Supplier economics, SWBR inputs, corridor depth, activations.</div>
+          <div class="biz-rev-arrow"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 5h8M6 2l3 3-3 3"/></svg> Supply owns</div>
+        </div>
+        <div class="biz-rev-card">
+          <div class="biz-rev-cadence">Monthly · wk 4</div>
+          <div class="biz-rev-name">MBR</div>
+          <div class="biz-rev-desc">Trajectory vs plan. CM2 performance. Capital allocation decisions.</div>
+          <div class="biz-rev-arrow"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M1 5h8M6 2l3 3-3 3"/></svg> Finance owns</div>
+        </div>
+      </div>
+
+      <!-- CONSOLIDATED WATCH STACK -->
+      <div class="lp-sec-label"><div class="lp-sec-dot"></div>Watch items this week</div>
+      <div class="lp-sec-rule"></div>
+      <div class="watch-stack">
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(220,38,38,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5M6 8.5v.3"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">Spain commission rate drift — 3rd consecutive week below plan</div>
+            <div class="watch-why">Rate at 14.1% vs plan 15.0%. Repeated miss suggests structural issue in ES supplier pricing, not a one-off.</div>
+            <div class="watch-action"><strong>Action:</strong> Review ES supplier contracts and repricing rules. Escalate if no resolution by CW22.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Rishabh</span><span class="watch-due">Due: CW22 close</span><span class="lp-alert-badge" style="background:rgba(220,38,38,0.1);color:#dc2626;font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 8px;border-radius:20px;">MBR flag</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge down">Watch</span><span style="font-size:10px;color:var(--muted);">Revenue</span></div>
+        </div>
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(217,119,6,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5M6 8.5v.3"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">ABV softness — US basket value down €3 WoW</div>
+            <div class="watch-why">Possible mix shift toward lower-priced activities. If sustained, will drag commission rate and NR in MTD view.</div>
+            <div class="watch-action"><strong>Action:</strong> Validate category mix shift hypothesis vs pricing change. Check US activity inventory pricing.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Trading</span><span class="watch-due">Monitor CW21–22</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge warn">Monitor</span><span style="font-size:10px;color:var(--muted);">Bookings</span></div>
+        </div>
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(5,150,105,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#059669" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><polyline points="3.5,6 5.5,8 8.5,4"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">ROAS outperformance — all channels ≥0.3x above plan</div>
+            <div class="watch-why">Budget headroom available. Incremental spend in DACH and US would likely yield positive returns this week.</div>
+            <div class="watch-action"><strong>Action:</strong> Confirm with Marketing whether to flex spend up in DACH/US before CW21 closes. Hold flexible if not confirmed.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Marketing</span><span class="watch-due">Action by: CW21 Fri</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge up">Action</span><span style="font-size:10px;color:var(--muted);">Marketing</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ EXEC OVERVIEW ═══════ -->
+  <div class="view" id="view-exec">
+    <!-- Audience tag + confidence ribbon -->
+    <div style="padding:12px 26px 0;display:flex;align-items:center;justify-content:space-between;background:white;border-bottom:1px solid var(--border);">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Exec &amp; C-level</div>
+      <div style="font-size:10px;color:var(--muted);padding-bottom:12px;">WBR → MBR pipeline view</div>
+    </div>
+    <div class="confidence-ribbon">
+      <div class="cr-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#92400E" stroke-width="1.4" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div>
+      <div><strong>Data note:</strong> CW21 figures are pre-cancellation close. Attribution uses a 1.2x incrementality multiplier — a working assumption, not validated. ~50% of marketing spend has confirmed incremental estimates.<span class="cr-pill">Pre-cancellation</span><span class="cr-pill">Attribution est.</span></div>
+    </div>
+    <div class="view-inner">
+
+      <!-- PACING TO PLAN -->
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Pacing to plan</div><span class="badge flat">WTD primary · MTD/QTD context</span></div>
+      <div class="sec-rule"></div>
+      <div class="pacing-grid" style="margin-bottom:22px;">
+        <div class="pacing-card">
+          <div class="pacing-header"><div class="pacing-title">June GMV attainment</div><div class="pacing-period">MTD · CW21 close</div></div>
+          <div class="pacing-vals"><div class="pacing-actual">€97.4M</div><div class="pacing-target">of €188.0M target</div></div>
+          <div class="pacing-bar-bg"><div class="pacing-bar-fill" style="width:52%;background:var(--red);"></div></div>
+          <div class="pacing-footer"><div class="pacing-pct">52% through month</div><span class="pacing-status" style="background:rgba(5,150,105,0.1);color:#059669;">On track</span></div>
+        </div>
+        <div class="pacing-card">
+          <div class="pacing-header"><div class="pacing-title">Q2 GMV attainment</div><div class="pacing-period">QTD · CW21 close</div></div>
+          <div class="pacing-vals"><div class="pacing-actual">€521.2M</div><div class="pacing-target">of €668.0M target</div></div>
+          <div class="pacing-bar-bg"><div class="pacing-bar-fill" style="width:78%;background:#4A3060;"></div></div>
+          <div class="pacing-footer"><div class="pacing-pct">78% through quarter</div><span class="pacing-status" style="background:rgba(5,150,105,0.1);color:#059669;">On track</span></div>
+        </div>
+        <div class="pacing-card">
+          <div class="pacing-header"><div class="pacing-title">June NR attainment</div><div class="pacing-period">MTD · CW21 close</div></div>
+          <div class="pacing-vals"><div class="pacing-actual">€14.6M</div><div class="pacing-target">of €28.2M target</div></div>
+          <div class="pacing-bar-bg"><div class="pacing-bar-fill" style="width:52%;background:var(--red);"></div></div>
+          <div class="pacing-footer"><div class="pacing-pct">52% through month</div><span class="pacing-status" style="background:rgba(5,150,105,0.1);color:#059669;">On track</span></div>
+        </div>
+        <div class="pacing-card">
+          <div class="pacing-header"><div class="pacing-title">Q2 ROAS attainment</div><div class="pacing-period">QTD average</div></div>
+          <div class="pacing-vals"><div class="pacing-actual">4.6x</div><div class="pacing-target">vs 4.5x target</div></div>
+          <div class="pacing-bar-bg"><div class="pacing-bar-fill" style="width:85%;background:#059669;"></div></div>
+          <div class="pacing-footer"><div class="pacing-pct">+0.1x above target</div><span class="pacing-status" style="background:rgba(5,150,105,0.1);color:#059669;">Ahead</span></div>
+        </div>
+      </div>
+
+      <!-- KPI GRID — 8 metrics, 4+4 -->
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>WTD performance — vs plan primary</div></div>
+      <div class="sec-rule"></div>
+      <div class="kpi-grid" style="margin-bottom:12px;">
+        <div class="kpi-card"><div class="kpi-lbl">GMV</div><div class="kpi-val">€42.1M</div><div class="kpi-foot"><span class="badge up">▲ +3.9% vs plan</span><span class="kpi-sub">+14.2% LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Net Revenue</div><div class="kpi-val">€6.3M</div><div class="kpi-foot"><span class="badge up">▲ +2.1% vs plan</span><span class="kpi-sub">+11.8% LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">CM1</div><div class="kpi-val">€4.8M</div><div class="kpi-foot"><span class="badge up">▲ +1.4% vs plan</span><span class="kpi-sub">+9.1% LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">ROAS</div><div class="kpi-val">4.8x</div><div class="kpi-foot"><span class="badge up">▲ +0.3x vs plan</span><span class="kpi-sub">+0.4x LY</span></div></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-lbl">Bookings</div><div class="kpi-val">187K</div><div class="kpi-foot"><span class="badge up">▲ +3.3% vs plan</span><span class="kpi-sub">+9.4% LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Comm. rate</div><div class="kpi-val">14.9%</div><div class="kpi-foot"><span class="badge down">▼ −0.2pp vs plan</span><span class="kpi-sub">+0.1pp LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">ABV</div><div class="kpi-val">€225</div><div class="kpi-foot"><span class="badge down">▼ −€3 vs plan</span><span class="kpi-sub">−€3 LY</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Cxl rate</div><div class="kpi-val">4.2%</div><div class="kpi-foot"><span class="badge up">▼ −0.3pp vs plan</span><span class="kpi-sub">−0.1pp LY</span></div></div>
+      </div>
+
+      <div class="chart-row21">
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Weekly GMV — Actuals vs Budget vs LY</div><div class="chart-sub">13-week rolling · EUR millions</div></div></div>
+          <div style="height:220px;"><canvas id="c-trend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Channel mix</div><div class="chart-sub">By revenue contribution</div></div></div>
+          <div style="height:220px;"><canvas id="c-donut"></canvas></div>
+        </div>
+      </div>
+
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Weekly scorecard</div></div>
+      <div class="sec-rule"></div>
+      <div class="chart-card">
+        <table class="score-table">
+          <thead><tr><th>Metric</th><th>Actual</th><th>Plan</th><th>vs Plan</th><th>vs LY</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>GMV</td><td>€42.1M</td><td>€40.5M</td><td><span class="tbadge up">▲ +3.9%</span></td><td><span class="tbadge up">▲ +14.2%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Net Revenue</td><td>€6.31M</td><td>€6.18M</td><td><span class="tbadge up">▲ +2.1%</span></td><td><span class="tbadge up">▲ +11.8%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>CM1</td><td>€4.80M</td><td>€4.73M</td><td><span class="tbadge up">▲ +1.4%</span></td><td><span class="tbadge up">▲ +9.1%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Commission Rate</td><td>14.9%</td><td>15.1%</td><td><span class="tbadge down">▼ −0.2pp</span></td><td><span class="tbadge flat">+0.1pp</span></td><td><span class="tbadge warn">Watch</span></td></tr>
+            <tr><td>ROAS</td><td>4.8x</td><td>4.5x</td><td><span class="tbadge up">▲ +0.3x</span></td><td><span class="tbadge up">▲ +0.4x</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Bookings</td><td>187K</td><td>181K</td><td><span class="tbadge up">▲ +3.3%</span></td><td><span class="tbadge up">▲ +9.4%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Cxl Rate</td><td>4.2%</td><td>4.5%</td><td><span class="tbadge up">▼ −0.3pp</span></td><td><span class="tbadge up">−0.1pp</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>ABV</td><td>€225</td><td>€228</td><td><span class="tbadge down">▼ −€3</span></td><td><span class="tbadge down">▼ −€3</span></td><td><span class="tbadge warn">Monitor</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ REVENUE ═══════ -->
+  <div class="view" id="view-revenue">
+    <div style="padding:10px 26px 0;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding-bottom:10px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Trading &amp; Finance</div>
+    </div>
+    <div class="view-inner">
+      <div class="commentary-block">
+        <div class="cb-headline">Net Revenue €6.31M — 2.1% ahead of plan on GMV growth. Commission rate drift in Spain offsetting upside.</div>
+        <div class="cb-rows">
+          <div class="cb-row"><div class="cb-row-label">Why</div><div class="cb-row-text">DACH volume growth (+18% vs plan) driving NR outperformance. Spain rate at 14.1% vs 15.0% plan for 3rd week is the drag — worth €0.08M if corrected.</div></div>
+          <div class="cb-row"><div class="cb-row-label">What we did</div><div class="cb-row-text">Flagged ES supplier contracts for review. No rate adjustment yet. DACH and US commission rates holding at plan.</div></div>
+          <div class="cb-row" style="border-right:none;"><div class="cb-row-label">Owner</div><div class="cb-row-text">Rishabh (ES supplier review), Trading (DACH rate monitoring)</div></div>
+        </div>
+        <div class="cb-watch"><div class="cb-watch-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#FA4F2D" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div><div class="cb-watch-text"><strong>Watch:</strong> If ES rate not corrected by CW22, MTD NR will miss plan. Flag for MBR if it persists into CW23.</div></div>
+      </div>
+      <div class="stat-row3">
+        <div class="stat-card"><div class="stat-lbl">Net Revenue</div><div class="stat-val">€6.31M</div><div class="stat-delta">vs plan €6.18M <span class="g">▲ +€0.13M</span></div></div>
+        <div class="stat-card"><div class="stat-lbl">Commission Rate</div><div class="stat-val">14.9%</div><div class="stat-delta">vs plan 15.1% <span class="r">▼ −0.2pp</span></div></div>
+        <div class="stat-card"><div class="stat-lbl">Spain rate (watch)</div><div class="stat-val">14.1%</div><div class="stat-delta">vs plan 15.0% <span class="r">▼ −0.9pp · 3rd week</span></div></div>
+      </div>
+      <div class="chart-row2">
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Net Revenue — Actual vs LY</div><div class="chart-sub">13-week rolling · EUR millions</div></div></div>
+          <div style="height:200px;"><canvas id="c-nr"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Commission rate — Actual vs Plan</div><div class="chart-sub">Weekly rate · %</div></div></div>
+          <div style="height:200px;"><canvas id="c-comm"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ BOOKINGS ═══════ -->
+  <div class="view" id="view-bookings">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Trading &amp; Marketing</div>
+    </div>
+    <div class="view-inner">
+      <div class="commentary-block">
+        <div class="cb-headline">187K bookings — 3.3% ahead of plan. New customer share at 61%, above target. ABV softness in US warrants monitoring.</div>
+        <div class="cb-rows">
+          <div class="cb-row"><div class="cb-row-label">Why</div><div class="cb-row-text">Volume growth driven by DACH (+16%) and US (+12%). Paid search efficiency recovery contributing to new customer acquisition above plan.</div></div>
+          <div class="cb-row"><div class="cb-row-label">What we did</div><div class="cb-row-text">No intervention — performance is ahead. ABV softness flagged to Marketing for category mix investigation.</div></div>
+          <div class="cb-row" style="border-right:none;"><div class="cb-row-label">Owner</div><div class="cb-row-text">Trading (volume monitoring), Marketing (ABV mix investigation)</div></div>
+        </div>
+        <div class="cb-watch"><div class="cb-watch-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#FA4F2D" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div><div class="cb-watch-text"><strong>Watch:</strong> ABV at €225 vs €228 plan (−€3). If mix shift to lower-priced activities continues, commission rate and NR will be affected in MTD.</div></div>
+      </div>
+      <div class="stat-row4">
+        <div class="stat-card"><div class="stat-lbl">Bookings</div><div class="stat-val">187K</div><div class="stat-delta">vs plan 181K <span class="g">▲ +3.3%</span></div></div>
+        <div class="stat-card"><div class="stat-lbl">ABV</div><div class="stat-val">€225</div><div class="stat-delta">vs plan €228 <span class="a">▼ −€3</span></div></div>
+        <div class="stat-card"><div class="stat-lbl">New customers</div><div class="stat-val">61%</div><div class="stat-delta">vs plan 59% <span class="g">▲ +2pp</span></div></div>
+        <div class="stat-card"><div class="stat-lbl">Cancellations</div><div class="stat-val">7,854</div><div class="stat-delta">Rate 4.2% <span class="g">▼ −0.3pp vs plan</span></div></div>
+      </div>
+      <div class="chart-row21">
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Sessions → confirmed bookings</div><div class="chart-sub">Conversion funnel · all channels</div></div></div>
+          <div class="funnel" style="padding:4px 0;">
+            <div class="funnel-row"><div class="funnel-lbl">Sessions</div><div class="funnel-bg"><div class="funnel-fill" style="width:100%;background:#3E0A00"><span>12.4M</span></div></div><div class="funnel-num">12.4M</div><div class="funnel-cvr">100%</div></div>
+            <div class="funnel-row"><div class="funnel-lbl">Product views</div><div class="funnel-bg"><div class="funnel-fill" style="width:71%;background:#4A3060"><span>8.8M</span></div></div><div class="funnel-num">8.8M</div><div class="funnel-cvr">71.0%</div></div>
+            <div class="funnel-row"><div class="funnel-lbl">Add to basket</div><div class="funnel-bg"><div class="funnel-fill" style="width:28%;background:#6B57C8"><span>3.5M</span></div></div><div class="funnel-num">3.5M</div><div class="funnel-cvr">28.2%</div></div>
+            <div class="funnel-row"><div class="funnel-lbl">Checkout start</div><div class="funnel-bg"><div class="funnel-fill" style="width:14%;background:var(--red)"><span>1.74M</span></div></div><div class="funnel-num">1.74M</div><div class="funnel-cvr">14.0%</div></div>
+            <div class="funnel-row"><div class="funnel-lbl">Confirmed</div><div class="funnel-bg"><div class="funnel-fill" style="width:1.5%;background:#059669"><span>187K</span></div></div><div class="funnel-num">187K</div><div class="funnel-cvr">1.5%</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Day of week pattern</div><div class="chart-sub">Bookings · K · This year vs LY</div></div></div>
+          <div style="height:200px;"><canvas id="c-dow"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-row2">
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">New vs repeat customers</div><div class="chart-sub">13-week trend · %</div></div></div>
+          <div style="height:180px;"><canvas id="c-newrep"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">Category mix</div><div class="chart-sub">By bookings contribution · WTD</div></div></div>
+          <div style="height:180px;"><canvas id="c-cat"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ MARKETS ═══════ -->
+  <div class="view" id="view-markets">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Trading &amp; Supply</div>
+    </div>
+    <div class="view-inner">
+      <div class="commentary-block">
+        <div class="cb-headline">DACH leading this week at €11.4M GMV (+18% vs plan). US and UK also ahead. Spain and France below plan — require corridor-level investigation.</div>
+        <div class="cb-rows">
+          <div class="cb-row"><div class="cb-row-label">Why</div><div class="cb-row-text">DACH strength driven by D-IT and D-ES corridors. Spain underperformance linked to supplier pricing issues reducing conversion, not demand.</div></div>
+          <div class="cb-row"><div class="cb-row-label">What we did</div><div class="cb-row-text">ES corridors flagged to Supply for capacity review. DACH corridor depth confirmed healthy (87 supply health score).</div></div>
+          <div class="cb-row" style="border-right:none;"><div class="cb-row-label">Owner</div><div class="cb-row-text">Supply (ES corridor), Trading (France investigation pending)</div></div>
+        </div>
+        <div class="cb-watch"><div class="cb-watch-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#FA4F2D" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div><div class="cb-watch-text"><strong>Watch:</strong> France at −4.2% vs plan for 2nd week. Check FR supply depth and pricing for high-volume corridors (FR-IT, FR-ES).</div></div>
+      </div>
+
+      <!-- GEO TABS -->
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Geographic breakdown</div></div>
+      <div class="sec-rule"></div>
+      <div class="geo-tabs">
+        <div class="geo-tab active" onclick="geoTab('countries',this)">Source markets</div>
+        <div class="geo-tab" onclick="geoTab('corridors',this)">Corridors</div>
+      </div>
+
+      <!-- COUNTRIES PANEL -->
+      <div class="geo-panel active" id="geo-countries">
+        <div class="geo-grid">
+          <div class="geo-card hi"><div class="geo-flag">🇩🇪</div><div class="geo-name">DACH</div><div class="geo-gmv">€11.4M</div><div class="geo-plan up">▲ +18% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇺🇸</div><div class="geo-name">US</div><div class="geo-gmv">€9.8M</div><div class="geo-plan up">▲ +8% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇬🇧</div><div class="geo-name">UK</div><div class="geo-gmv">€6.5M</div><div class="geo-plan up">▲ +5% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇫🇷</div><div class="geo-name">France</div><div class="geo-gmv">€5.2M</div><div class="geo-plan down">▼ −4.2% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇪🇸</div><div class="geo-name">Spain</div><div class="geo-gmv">€4.1M</div><div class="geo-plan down">▼ −2.8% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇮🇹</div><div class="geo-name">Italy</div><div class="geo-gmv">€3.3M</div><div class="geo-plan up">▲ +1.4% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇳🇱</div><div class="geo-name">Netherlands</div><div class="geo-gmv">€2.1M</div><div class="geo-plan up">▲ +3.1% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇧🇪</div><div class="geo-name">Belgium</div><div class="geo-gmv">€0.9M</div><div class="geo-plan flat">— vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🇨🇭</div><div class="geo-name">Switzerland</div><div class="geo-gmv">€0.8M</div><div class="geo-plan up">▲ +2.0% vs plan</div></div>
+          <div class="geo-card"><div class="geo-flag">🌍</div><div class="geo-name">Other</div><div class="geo-gmv">€1.7M</div><div class="geo-plan flat">−0.5% vs plan</div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head"><div><div class="chart-title">GMV by source market</div><div class="chart-sub">WTD · EUR millions · Top 6</div></div></div>
+          <div style="height:200px;"><canvas id="c-mkt"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CORRIDORS PANEL -->
+      <div class="geo-panel" id="geo-corridors">
+        <div style="margin-bottom:14px;padding:10px 14px;background:var(--sand);border-radius:8px;font-size:11.5px;color:var(--muted);">
+          <strong style="color:var(--maroon);">Standard: source → corridor → destination.</strong> Below shows top 15 corridors by WTD GMV. Corridors marked ✗ are below plan and should be reviewed in the Supply MBR.
+        </div>
+        <div class="chart-card">
+          <table class="mkt-table">
+            <thead><tr><th>Corridor</th><th>Source</th><th>Destination</th><th>GMV WTD</th><th>vs Plan</th><th>vs LY</th><th>Supply health</th></tr></thead>
+            <tbody>
+              <tr><td><strong>D-IT</strong></td><td>DACH</td><td>Italy</td><td>€3.8M</td><td><span class="tbadge up">▲ +21%</span></td><td><span class="tbadge up">▲ +18%</span></td><td><span class="tbadge up">92/100</span></td></tr>
+              <tr><td><strong>D-ES</strong></td><td>DACH</td><td>Spain</td><td>€3.2M</td><td><span class="tbadge up">▲ +15%</span></td><td><span class="tbadge up">▲ +12%</span></td><td><span class="tbadge up">88/100</span></td></tr>
+              <tr><td><strong>US-US</strong></td><td>US</td><td>US (domestic)</td><td>€2.9M</td><td><span class="tbadge up">▲ +9%</span></td><td><span class="tbadge up">▲ +22%</span></td><td><span class="tbadge up">85/100</span></td></tr>
+              <tr><td><strong>GB-ES</strong></td><td>UK</td><td>Spain</td><td>€2.4M</td><td><span class="tbadge up">▲ +6%</span></td><td><span class="tbadge up">▲ +8%</span></td><td><span class="tbadge up">84/100</span></td></tr>
+              <tr><td><strong>D-GR</strong></td><td>DACH</td><td>Greece</td><td>€2.1M</td><td><span class="tbadge up">▲ +11%</span></td><td><span class="tbadge up">▲ +14%</span></td><td><span class="tbadge up">81/100</span></td></tr>
+              <tr><td><strong>FR-IT</strong></td><td>France</td><td>Italy</td><td>€1.8M</td><td><span class="tbadge down">▼ −5%</span></td><td><span class="tbadge flat">+1%</span></td><td><span class="tbadge warn">74/100</span></td></tr>
+              <tr><td><strong>US-IT</strong></td><td>US</td><td>Italy</td><td>€1.7M</td><td><span class="tbadge up">▲ +4%</span></td><td><span class="tbadge up">▲ +16%</span></td><td><span class="tbadge up">82/100</span></td></tr>
+              <tr><td><strong>GB-PT</strong></td><td>UK</td><td>Portugal</td><td>€1.4M</td><td><span class="tbadge up">▲ +2%</span></td><td><span class="tbadge up">▲ +9%</span></td><td><span class="tbadge up">79/100</span></td></tr>
+              <tr><td><strong>ES-ES</strong></td><td>Spain</td><td>Spain (domestic)</td><td>€1.2M</td><td><span class="tbadge down">▼ −8%</span></td><td><span class="tbadge down">▼ −3%</span></td><td><span class="tbadge warn">68/100</span></td></tr>
+              <tr><td><strong>FR-ES</strong></td><td>France</td><td>Spain</td><td>€1.1M</td><td><span class="tbadge down">▼ −6%</span></td><td><span class="tbadge flat">+2%</span></td><td><span class="tbadge warn">71/100</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ MARKETING ═══════ -->
+  <div class="view" id="view-marketing">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Marketing &amp; Finance</div>
+    </div>
+    <div class="confidence-ribbon">
+      <div class="cr-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#92400E" stroke-width="1.4" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div>
+      <div><strong>Attribution note:</strong> ROAS uses attributed returns. Incrementality coverage is ~50% of spend — 1.2x multiplier and 80% marginal ROAS are working assumptions. ROAS is a derived target from CM2, not a standalone goal.<span class="cr-pill">Incrementality gap: ~50%</span><span class="cr-pill">1.2x multiplier est.</span></div>
+    </div>
+    <div class="view-inner">
+      <div class="commentary-block">
+        <div class="cb-headline">ROAS 4.8x — 0.3x ahead of plan. 6 of 8 channel portfolios above floor. Social and Partnerships below floor, combined exposure €0.4M spend under-delivering.</div>
+        <div class="cb-rows">
+          <div class="cb-row"><div class="cb-row-label">Why</div><div class="cb-row-text">Paid Search tROAS restructure complete — now tracking target. SEO impressions recovering post-algorithm update. Social bidding strategy underperforming target tROAS.</div></div>
+          <div class="cb-row"><div class="cb-row-label">What we did</div><div class="cb-row-text">Paused non-converting PS campaigns (CW20). Social bidding under review with channel team. Partnerships tiering exercise in progress.</div></div>
+          <div class="cb-row" style="border-right:none;"><div class="cb-row-label">Owner</div><div class="cb-row-text">Marketing (Social strategy), Partnerships team (tiering), Finance (CM2 linkage check)</div></div>
+        </div>
+        <div class="cb-watch"><div class="cb-watch-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#FA4F2D" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div><div class="cb-watch-text"><strong>Watch:</strong> Social at 3.2x (floor 3.5x). If not corrected by CW22, pause or reallocate budget to PS/SEO. Marketing cost as % of GMV must decline — Social drag risks this target.</div></div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-lbl">ROAS (overall)</div><div class="kpi-val">4.8x</div><div class="kpi-foot"><span class="badge up">▲ +0.3x vs plan</span><span class="kpi-sub">Floor: 3.5x (LY)</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Marketing spend</div><div class="kpi-val">€8.8M</div><div class="kpi-foot"><span class="badge up">▼ −€0.2M vs plan</span><span class="kpi-sub">Budget: €9.0M</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">CM1 contribution</div><div class="kpi-val">€4.8M</div><div class="kpi-foot"><span class="badge up">▲ +1.4% vs plan</span><span class="kpi-sub">Mktg cost / GMV: 20.9%</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Below-floor portf.</div><div class="kpi-val">2 of 8</div><div class="kpi-foot"><span class="badge warn">Social, Partners</span><span class="kpi-sub">LY full year floor</span></div></div>
+      </div>
+
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Channel ROAS vs plan and floor</div><span class="badge warn">2 portfolios below floor</span></div>
+      <div class="sec-rule"></div>
+      <div class="chart-card" style="margin-bottom:16px;">
+        <table class="mkt-table">
+          <thead><tr><th>Channel</th><th>ROAS actual</th><th>ROAS plan</th><th>vs Plan</th><th>Floor (LY)</th><th>Floor status</th><th>Spend WTD</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Paid Search</strong></td><td>5.2x</td><td>4.8x</td><td><span class="tbadge up">▲ +0.4x</span></td><td>3.9x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>€3.1M</td></tr>
+            <tr><td><strong>SEO / Organic</strong></td><td>8.1x</td><td>7.5x</td><td><span class="tbadge up">▲ +0.6x</span></td><td>6.2x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>—</td></tr>
+            <tr><td><strong>Direct / Branded</strong></td><td>12.3x</td><td>11.0x</td><td><span class="tbadge up">▲ +1.3x</span></td><td>9.8x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>—</td></tr>
+            <tr><td><strong>Email</strong></td><td>6.8x</td><td>6.5x</td><td><span class="tbadge up">▲ +0.3x</span></td><td>5.1x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>€0.3M</td></tr>
+            <tr><td><strong>Retargeting</strong></td><td>4.1x</td><td>3.9x</td><td><span class="tbadge up">▲ +0.2x</span></td><td>3.5x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>€0.9M</td></tr>
+            <tr><td><strong>Affiliates</strong></td><td>3.9x</td><td>3.8x</td><td><span class="tbadge up">▲ +0.1x</span></td><td>3.2x</td><td><div class="floor-cell"><div class="floor-dot above"></div>Above floor</div></td><td>€0.5M</td></tr>
+            <tr style="background:rgba(220,38,38,0.03)"><td><strong>Social</strong></td><td style="color:#dc2626;font-weight:700;">3.2x</td><td>3.5x</td><td><span class="tbadge down">▼ −0.3x</span></td><td>3.5x</td><td><div class="floor-cell"><div class="floor-dot below"></div><strong style="color:#dc2626;">Below floor</strong></div></td><td>€2.8M</td></tr>
+            <tr style="background:rgba(220,38,38,0.03)"><td><strong>Partnerships</strong></td><td style="color:#dc2626;font-weight:700;">2.8x</td><td>3.0x</td><td><span class="tbadge down">▼ −0.2x</span></td><td>3.0x</td><td><div class="floor-cell"><div class="floor-dot below"></div><strong style="color:#dc2626;">Below floor</strong></div></td><td>€1.2M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SUPPLY ═══════ -->
+  <div class="view" id="view-supply">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Supply &amp; Trading</div>
+    </div>
+    <div class="view-inner">
+      <div class="commentary-block">
+        <div class="cb-headline">Supply health index 87/100 — up 2 points WoW. New activations 84, ahead of 75 weekly target. Spain and France corridors below threshold, require review.</div>
+        <div class="cb-rows">
+          <div class="cb-row"><div class="cb-row-label">Why</div><div class="cb-row-text">DACH and Italy supplier expansion from CW18 activations now contributing to health improvement. ES domestic corridor depth at 68/100 — lowest in portfolio, linked to pricing disputes.</div></div>
+          <div class="cb-row"><div class="cb-row-label">What we did</div><div class="cb-row-text">Escalated ES supplier contracts to SWBR review. IT activation batch (22 suppliers) processed CW21. Supply MBR action items from May under execution.</div></div>
+          <div class="cb-row" style="border-right:none;"><div class="cb-row-label">Owner</div><div class="cb-row-text">Supply (ES contract escalation, IT batch review), Trading (France corridor flag)</div></div>
+        </div>
+        <div class="cb-watch"><div class="cb-watch-icon"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#FA4F2D" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3.5v2.5M5.5 8v.3"/></svg></div><div class="cb-watch-text"><strong>Watch:</strong> ES domestic and FR-ES corridors need capacity review before summer peak. Target: raise ES-ES from 68 to 75 by CW24 (June end).</div></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-lbl">Active suppliers</div><div class="kpi-val">12,400</div><div class="kpi-foot"><span class="badge up">▲ +84 this week</span><span class="kpi-sub">Target: +75/wk</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Health index</div><div class="kpi-val">87/100</div><div class="kpi-foot"><span class="badge up">▲ +2 WoW</span><span class="kpi-sub">Target: 85+</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Activations WTD</div><div class="kpi-val">84</div><div class="kpi-foot"><span class="badge up">▲ +12% vs plan</span><span class="kpi-sub">Plan: 75</span></div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Below-threshold corridors</div><div class="kpi-val">2 of 15</div><div class="kpi-foot"><span class="badge warn">ES-ES, FR-ES</span><span class="kpi-sub">Threshold: 75</span></div></div>
+      </div>
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Supply health by market</div></div>
+      <div class="sec-rule"></div>
+      <div class="health-grid">
+        <div class="health-card"><div class="health-market">DACH</div><div class="health-score good">92</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:92%;background:#059669;"></div></div><div class="health-meta">3,200 suppliers · 12 new CW21</div></div>
+        <div class="health-card"><div class="health-market">Italy (destination)</div><div class="health-score good">88</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:88%;background:#059669;"></div></div><div class="health-meta">2,800 suppliers · 22 new CW21</div></div>
+        <div class="health-card"><div class="health-market">US</div><div class="health-score good">85</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:85%;background:#059669;"></div></div><div class="health-meta">2,100 suppliers · 18 new CW21</div></div>
+        <div class="health-card"><div class="health-market">UK</div><div class="health-score good">83</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:83%;background:#059669;"></div></div><div class="health-meta">1,600 suppliers · 9 new CW21</div></div>
+        <div class="health-card"><div class="health-market">Spain (destination)</div><div class="health-score ok">71</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:71%;background:#D97706;"></div></div><div class="health-meta">1,900 suppliers · 8 new CW21 · <strong style="color:#D97706;">Contract review pending</strong></div></div>
+        <div class="health-card"><div class="health-market">France</div><div class="health-score ok">74</div><div class="health-bar-bg"><div class="health-bar-fill" style="width:74%;background:#D97706;"></div></div><div class="health-meta">1,200 suppliers · 6 new CW21 · <strong style="color:#D97706;">Corridor review needed</strong></div></div>
+      </div>
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Supplier economics by market</div></div>
+      <div class="sec-rule"></div>
+      <div class="chart-card">
+        <table class="mkt-table">
+          <thead><tr><th>Market</th><th>Avg comm. rate</th><th>vs Plan</th><th>GMV / supplier</th><th>Active % (last 30d)</th><th>New activations WTD</th><th>Priority</th></tr></thead>
+          <tbody>
+            <tr><td><strong>DACH</strong></td><td>15.8%</td><td><span class="tbadge up">▲ +0.2pp</span></td><td>€3,560</td><td>78%</td><td>12</td><td><span class="tbadge up">Healthy</span></td></tr>
+            <tr><td><strong>Italy</strong></td><td>15.2%</td><td><span class="tbadge up">▲ +0.1pp</span></td><td>€2,940</td><td>74%</td><td>22</td><td><span class="tbadge up">Healthy</span></td></tr>
+            <tr><td><strong>US</strong></td><td>14.6%</td><td><span class="tbadge flat">—</span></td><td>€4,670</td><td>71%</td><td>18</td><td><span class="tbadge up">Healthy</span></td></tr>
+            <tr><td><strong>UK</strong></td><td>15.0%</td><td><span class="tbadge flat">—</span></td><td>€3,280</td><td>70%</td><td>9</td><td><span class="tbadge up">Healthy</span></td></tr>
+            <tr><td><strong>Spain</strong></td><td>13.8%</td><td><span class="tbadge down">▼ −1.0pp</span></td><td>€2,160</td><td>62%</td><td>8</td><td><span class="tbadge warn">Review</span></td></tr>
+            <tr><td><strong>France</strong></td><td>14.4%</td><td><span class="tbadge down">▼ −0.5pp</span></td><td>€2,840</td><td>65%</td><td>6</td><td><span class="tbadge warn">Monitor</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ CHANNELS ═══════ -->
+  <div class="view" id="view-channels">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Marketing</div>
+    </div>
+    <div class="view-inner">
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Channel deep dives — CW21</div></div>
+      <div class="sec-rule"></div>
+      <div class="channel-deep">
+
+        <!-- PAID SEARCH -->
+        <div class="channel-section">
+          <div class="channel-sec-header">
+            <div><div class="channel-sec-title">Paid Search — tROAS re-steer</div><div class="channel-sec-sub">ROAS 5.2x · Spend €3.1M · Audience: DACH, US primary</div></div>
+            <span class="channel-sec-badge" style="background:rgba(5,150,105,0.1);color:#059669;">Resolved CW21</span>
+          </div>
+          <div class="channel-stat-row">
+            <div class="channel-stat"><div class="channel-stat-lbl">ROAS this week</div><div class="channel-stat-val">5.2x</div><div class="channel-stat-delta" style="color:#059669;">▲ +0.4x vs plan (4.8x)</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">Spend WTD</div><div class="channel-stat-val">€3.1M</div><div class="channel-stat-delta" style="color:#059669;">▼ −€0.3M vs plan (budget saved)</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">CPA trend</div><div class="channel-stat-val">€16.6</div><div class="channel-stat-delta" style="color:#059669;">▼ −8% WoW · improving</div></div>
+          </div>
+          <div class="channel-commentary">
+            <strong>What happened:</strong> CW19 audit found 34% of PS spend going to generic keyword clusters with sub-2x ROAS. These were paused in CW20 and budget reallocated to branded + high-intent activity terms.<br><br>
+            <strong>What we did:</strong> Restructured 8 campaigns. tROAS targets updated from flat 4.0x to tiered by market (DACH 5.5x, US 4.8x, UK/FR 4.2x). Negative keyword lists expanded by 1,200 terms.<br><br>
+            <strong>Result:</strong> ROAS improved from 4.1x (CW19) to 5.2x (CW21) with 9% spend reduction. DACH and US driving the recovery. CPA trending down for 3 weeks.
+          </div>
+        </div>
+
+        <!-- PARTNERSHIPS -->
+        <div class="channel-section">
+          <div class="channel-sec-header">
+            <div><div class="channel-sec-title">Partnerships — tiering exercise</div><div class="channel-sec-sub">ROAS 2.8x · Spend €1.2M · Below floor (floor: 3.0x)</div></div>
+            <span class="channel-sec-badge" style="background:rgba(220,38,38,0.09);color:#dc2626;">Below floor · In progress</span>
+          </div>
+          <div class="channel-stat-row">
+            <div class="channel-stat"><div class="channel-stat-lbl">ROAS this week</div><div class="channel-stat-val" style="color:#dc2626;">2.8x</div><div class="channel-stat-delta" style="color:#dc2626;">▼ −0.2x vs floor (3.0x)</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">Tier 1 partners (12)</div><div class="channel-stat-val">68%</div><div class="channel-stat-delta" style="color:var(--muted);">68% of partnerships GMV</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">Tier 3 partners (21)</div><div class="channel-stat-val">€0.3M</div><div class="channel-stat-delta" style="color:#dc2626;">Sub-floor ROAS · review</div></div>
+          </div>
+          <div class="channel-commentary">
+            <strong>What happened:</strong> Tiering exercise across 50 active partners complete. Top 12 (Tier 1) deliver 68% of partnerships GMV at 4.2x ROAS — well above floor. Bottom 21 (Tier 3) drag overall to 2.8x.<br><br>
+            <strong>What we did:</strong> Tiering framework built. Tier 1 contracts prioritised for renewal with improved terms. Tier 3 contracts under commercial review — 8 identified for renegotiation or pause in CW22–23.<br><br>
+            <strong>Watch:</strong> Overall partnerships ROAS will remain below floor until Tier 3 renegotiations complete (~CW24). Interim: consider reallocating €0.3M Tier 3 spend to PS while negotiations in flight.
+          </div>
+        </div>
+
+        <!-- SEO -->
+        <div class="channel-section">
+          <div class="channel-sec-header">
+            <div><div class="channel-sec-title">SEO — algorithm recovery</div><div class="channel-sec-sub">ROAS 8.1x · No direct spend · Organic channel</div></div>
+            <span class="channel-sec-badge" style="background:rgba(5,150,105,0.1);color:#059669;">Recovering · CW18 trough passed</span>
+          </div>
+          <div class="channel-stat-row">
+            <div class="channel-stat"><div class="channel-stat-lbl">ROAS (attributed)</div><div class="channel-stat-val">8.1x</div><div class="channel-stat-delta" style="color:#059669;">▲ +0.6x vs plan (7.5x)</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">Impressions WoW</div><div class="channel-stat-val">+18%</div><div class="channel-stat-delta" style="color:#059669;">3rd consecutive week of growth</div></div>
+            <div class="channel-stat"><div class="channel-stat-lbl">Booking contribution</div><div class="channel-stat-val">24%</div><div class="channel-stat-delta" style="color:var(--muted);">Stable · plan 23%</div></div>
+          </div>
+          <div class="channel-commentary">
+            <strong>What happened:</strong> April core algorithm update caused a 22% impression drop over 3 weeks (CW15–17). Recovery actions (content refresh, structured data update, crawl frequency fix) deployed in CW18.<br><br>
+            <strong>What we did:</strong> 340 high-traffic activity pages refreshed with updated content. Structured data schema errors corrected (affected 1,200 pages). Internal linking restructured for destination clusters.<br><br>
+            <strong>Result:</strong> Impressions +18% WoW for 3rd consecutive week. Now 4% above pre-update level. Booking contribution stabilised at 24%. No further intervention planned — monitoring cadence weekly.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ ALERTS ═══════ -->
+  <div class="view" id="view-alerts">
+    <div style="padding:10px 26px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <div class="audience-tag"><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="5.5" cy="3.5" r="2"/><path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4"/></svg>Audience: Trading Lead</div>
+    </div>
+    <div class="view-inner">
+
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Consolidated watch stack</div><span class="badge warn">3 open · prioritised by materiality</span></div>
+      <div class="sec-rule"></div>
+      <div class="watch-stack" style="margin-bottom:28px;">
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(220,38,38,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5M6 8.5v.3"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">Spain commission rate drift — 3rd consecutive week</div>
+            <div class="watch-why">Rate at 14.1% vs plan 15.0%. Third week below plan. Estimated MTD NR impact: −€0.08M if not corrected this week.</div>
+            <div class="watch-action"><strong>Action:</strong> Escalate to supplier contract review. Target: pricing correction effective CW22. If not resolved by CW23, flag for MBR as structural issue.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Rishabh</span><span class="watch-due">Due: CW22 close</span><span class="mbr-flag">MBR flag</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge down">P1 — Act</span></div>
+        </div>
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(220,38,38,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5M6 8.5v.3"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">Partnerships ROAS below floor — 2.8x vs 3.0x floor</div>
+            <div class="watch-why">Tier 3 partners dragging average. Combined below-floor spend: €1.2M. Tiering review in progress but renegotiations won't complete until CW24.</div>
+            <div class="watch-action"><strong>Action:</strong> Interim reallocation of €0.3M Tier 3 budget to PS under review. Confirm reallocation decision by CW22. Marketing channel review owner.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Marketing</span><span class="watch-due">Decision: CW22</span><span class="mbr-flag">MBR flag</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge down">P1 — Act</span></div>
+        </div>
+        <div class="watch-item">
+          <div class="watch-sev" style="background:rgba(217,119,6,0.1);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5M6 8.5v.3"/></svg></div>
+          <div class="watch-content">
+            <div class="watch-title">US ABV softness — basket value −€3 WoW</div>
+            <div class="watch-why">Down from €228 to €225. Possible mix shift to lower-priced activities. If sustained, will compound commission rate drag.</div>
+            <div class="watch-action"><strong>Action:</strong> Marketing to validate category mix shift hypothesis. Check US activity inventory pricing vs conversion rates.</div>
+            <div class="watch-meta-row"><span class="watch-owner">Marketing / Trading</span><span class="watch-due">Monitor CW21–22</span></div>
+          </div>
+          <div class="watch-right"><span class="tbadge warn">P2 — Monitor</span></div>
+        </div>
+      </div>
+
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Weekly scorecard</div><span class="badge flat">vs Plan primary · vs LY context</span></div>
+      <div class="sec-rule"></div>
+      <div class="chart-card" style="margin-bottom:28px;">
+        <table class="score-table">
+          <thead><tr><th>Metric</th><th>Actual</th><th>Plan</th><th>vs Plan</th><th>vs LY</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>GMV</td><td>€42.1M</td><td>€40.5M</td><td><span class="tbadge up">▲ +3.9%</span></td><td><span class="tbadge up">▲ +14.2%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Net Revenue</td><td>€6.31M</td><td>€6.18M</td><td><span class="tbadge up">▲ +2.1%</span></td><td><span class="tbadge up">▲ +11.8%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>CM1</td><td>€4.80M</td><td>€4.73M</td><td><span class="tbadge up">▲ +1.4%</span></td><td><span class="tbadge up">▲ +9.1%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Commission Rate</td><td>14.9%</td><td>15.1%</td><td><span class="tbadge down">▼ −0.2pp</span></td><td><span class="tbadge flat">+0.1pp</span></td><td><span class="tbadge warn">Watch</span></td></tr>
+            <tr><td>ROAS</td><td>4.8x</td><td>4.5x</td><td><span class="tbadge up">▲ +0.3x</span></td><td><span class="tbadge up">▲ +0.4x</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Bookings</td><td>187K</td><td>181K</td><td><span class="tbadge up">▲ +3.3%</span></td><td><span class="tbadge up">▲ +9.4%</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>Cxl Rate</td><td>4.2%</td><td>4.5%</td><td><span class="tbadge up">▼ −0.3pp</span></td><td><span class="tbadge up">−0.1pp</span></td><td><span class="tbadge up">On track</span></td></tr>
+            <tr><td>ABV</td><td>€225</td><td>€228</td><td><span class="tbadge down">▼ −€3</span></td><td><span class="tbadge down">▼ −€3</span></td><td><span class="tbadge warn">Monitor</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sec-row"><div class="sec-label"><div class="sec-dot"></div>Rolling action log</div><span class="badge flat">Actions from past 4 weeks</span></div>
+      <div class="sec-rule"></div>
+      <div class="chart-card">
+        <table class="action-log-table">
+          <thead><tr><th>#</th><th>Action item</th><th>Owner</th><th>Opened</th><th>Due</th><th>Status</th><th>MBR</th></tr></thead>
+          <tbody>
+            <tr><td>01</td><td>ES supplier contract review — commission rate correction</td><td>Rishabh</td><td>CW21</td><td>CW22</td><td><span class="tbadge warn">In progress</span></td><td><span class="mbr-flag">Flag</span></td></tr>
+            <tr><td>02</td><td>Partnerships Tier 3 renegotiation or pause decision</td><td>Marketing</td><td>CW21</td><td>CW22</td><td><span class="tbadge warn">In progress</span></td><td><span class="mbr-flag">Flag</span></td></tr>
+            <tr><td>03</td><td>US ABV mix shift investigation — category pricing check</td><td>Trading/Mktg</td><td>CW21</td><td>CW22</td><td><span class="tbadge flat">Monitoring</span></td><td>—</td></tr>
+            <tr><td>04</td><td>PS campaign restructure — tROAS tiered targets by market</td><td>Marketing</td><td>CW20</td><td>CW21</td><td><span class="tbadge up">Done</span></td><td>—</td></tr>
+            <tr><td>05</td><td>SEO structured data correction — 1,200 page fix</td><td>Product/SEO</td><td>CW18</td><td>CW20</td><td><span class="tbadge up">Done</span></td><td>—</td></tr>
+            <tr><td>06</td><td>IT supply activation batch — 22 new suppliers</td><td>Supply</td><td>CW20</td><td>CW21</td><td><span class="tbadge up">Done</span></td><td>—</td></tr>
+            <tr><td>07</td><td>FR-ES corridor capacity review — summer peak prep</td><td>Supply</td><td>CW21</td><td>CW24</td><td><span class="tbadge flat">Not started</span></td><td>—</td></tr>
+            <tr><td>08</td><td>Social bidding strategy review — below floor ROAS</td><td>Marketing</td><td>CW21</td><td>CW23</td><td><span class="tbadge flat">Not started</span></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+/* DATA */
+const W=['W09','W10','W11','W12','W13','W14','W15','W16','W17','W18','W19','W20','W21'];
+const gmv_a=[28.1,29.4,31.2,33.8,35.0,34.2,36.1,35.8,37.4,38.9,39.2,40.8,42.1];
+const gmv_b=[27.5,29.0,30.8,33.0,34.5,35.0,35.8,36.5,37.0,38.0,39.5,40.0,40.5];
+const gmv_l=[23.8,25.1,26.4,28.2,29.5,28.9,30.5,30.2,31.8,33.0,33.4,35.1,36.9];
+const nr_a=[4.12,4.35,4.68,5.08,5.27,5.15,5.43,5.38,5.62,5.84,5.90,6.13,6.31];
+const nr_l=[3.60,3.78,3.95,4.23,4.44,4.34,4.58,4.53,4.77,4.95,5.02,5.27,5.64];
+const cm_a=[14.7,14.8,15.0,15.0,15.1,15.0,15.0,15.0,15.0,15.0,14.9,15.0,14.9];
+const cm_p=Array(13).fill(15.1);
+const dow_a=[22.1,25.4,26.8,28.2,34.1,41.2,38.9];
+const dow_l=[20.1,23.2,24.5,25.8,31.5,37.9,35.3];
+const nc=[58,59,60,59,61,60,62,61,63,62,61,62,61];
+const rc=[42,41,40,41,39,40,38,39,37,38,39,38,39];
+const mkt_a=[11.4,9.8,6.5,5.2,4.1,3.3];
+const mkt_l=[9.66,8.03,6.02,4.68,4.23,3.24];
+const mkt_n=['DACH','US','UK','France','Spain','Italy'];
+
+/* CHART DEFAULTS */
+Chart.defaults.font.family="'Inter','Helvetica Neue',sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color='rgba(62,10,0,0.45)';
+const R='#FA4F2D',M='#3E0A00',V='#6B57C8',G='rgba(62,10,0,0.055)';
+const tip={backgroundColor:M,titleColor:'#FDFAF5',bodyColor:'rgba(253,250,245,0.72)',padding:10,cornerRadius:8,boxPadding:4};
+const axisBase={x:{grid:{display:false},border:{display:false},ticks:{color:'rgba(62,10,0,0.38)'}},y:{grid:{color:G},border:{display:false},ticks:{color:'rgba(62,10,0,0.38)'}}};
+const leg={display:true,position:'bottom',align:'start',labels:{boxWidth:10,boxHeight:2,padding:14,font:{size:10,weight:'600'},color:'rgba(62,10,0,0.5)'}};
+
+new Chart('c-trend',{type:'line',data:{labels:W,datasets:[{label:'Actual',data:gmv_a,borderColor:R,backgroundColor:'rgba(250,79,45,0.07)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3,pointBackgroundColor:R,pointBorderColor:'#fff',pointBorderWidth:1.5},{label:'Budget',data:gmv_b,borderColor:V,borderWidth:2,borderDash:[5,3],tension:0.4,pointRadius:0,fill:false},{label:'LY',data:gmv_l,borderColor:'rgba(62,10,0,0.18)',borderWidth:1.5,tension:0.4,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:leg,tooltip:tip},scales:axisBase}});
+
+new Chart('c-donut',{type:'doughnut',data:{labels:['Paid search','SEO / Organic','Direct','Email','Social','Affiliates'],datasets:[{data:[38,24,18,9,7,4],backgroundColor:[R,M,V,'#FEDBD0','#DAD2F4','#F7F2EA'],borderWidth:0,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:true,position:'right',labels:{boxWidth:10,boxHeight:10,padding:9,font:{size:10},color:'rgba(62,10,0,0.6)'}},tooltip:{...tip,callbacks:{label:c=>` ${c.label}: ${c.raw}%`}}}}});
+
+new Chart('c-nr',{type:'bar',data:{labels:W,datasets:[{label:'Net Revenue',data:nr_a,backgroundColor:R,borderRadius:4,borderSkipped:false},{label:'LY',data:nr_l,backgroundColor:'rgba(62,10,0,0.09)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{...leg,labels:{...leg.labels,boxHeight:10}},tooltip:tip},scales:axisBase}});
+
+new Chart('c-comm',{type:'line',data:{labels:W,datasets:[{label:'Actual',data:cm_a,borderColor:R,backgroundColor:'rgba(250,79,45,0.07)',fill:true,tension:0.4,borderWidth:2.5,pointRadius:3,pointBackgroundColor:R,pointBorderColor:'#fff',pointBorderWidth:1.5},{label:'Plan',data:cm_p,borderColor:V,borderWidth:2,borderDash:[5,3],tension:0,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:leg,tooltip:tip},scales:{x:axisBase.x,y:{...axisBase.y,min:14.0,max:15.5,ticks:{callback:v=>v.toFixed(1)+'%',color:'rgba(62,10,0,0.38)'},grid:{color:G}}}}});
+
+new Chart('c-cat',{type:'bar',data:{labels:['Tours','Activities','Day trips','Museums','Other'],datasets:[{data:[36,26,20,12,6],backgroundColor:[R,M,V,'#DAD2F4','#ccc'],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:c=>` ${c.raw}%`}}},scales:{x:{...axisBase.x,ticks:{callback:v=>v+'%',color:'rgba(62,10,0,0.38)'}},y:{...axisBase.y,grid:{display:false}}}}});
+
+new Chart('c-dow',{type:'bar',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{label:'This year',data:dow_a,backgroundColor:R,borderRadius:5,borderSkipped:false},{label:'LY',data:dow_l,backgroundColor:'rgba(62,10,0,0.09)',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{...leg,labels:{...leg.labels,boxHeight:10}},tooltip:tip},scales:axisBase}});
+
+new Chart('c-newrep',{type:'line',data:{labels:W,datasets:[{label:'New',data:nc,borderColor:R,backgroundColor:'rgba(250,79,45,0.07)',fill:true,tension:0.4,borderWidth:2,pointRadius:2},{label:'Repeat',data:rc,borderColor:M,backgroundColor:'rgba(62,10,0,0.04)',fill:true,tension:0.4,borderWidth:2,pointRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:leg,tooltip:tip},scales:{x:axisBase.x,y:{...axisBase.y,ticks:{callback:v=>v+'%',color:'rgba(62,10,0,0.38)'},grid:{color:G}}}}});
+
+new Chart('c-mkt',{type:'bar',data:{labels:mkt_n,datasets:[{label:'This year',data:mkt_a,backgroundColor:R,borderRadius:6,borderSkipped:false},{label:'Last year',data:mkt_l,backgroundColor:'rgba(62,10,0,0.10)',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{...leg,labels:{...leg.labels,boxHeight:10}},tooltip:tip},scales:{x:axisBase.x,y:{...axisBase.y,ticks:{callback:v=>'€'+v+'M',color:'rgba(62,10,0,0.38)'},grid:{color:G}}}}});
+
+/* NAVIGATION */
+const META={
+  home:     {title:'Home',sub:'As of CW21 close · 26 May 2026'},
+  exec:     {title:'Executive overview',sub:'Audience: Exec & C-level · Full scorecard · CW21'},
+  revenue:  {title:'Revenue deep dive',sub:'Audience: Trading & Finance · Commission rate & NR · WTD'},
+  bookings: {title:'Bookings analysis',sub:'Audience: Trading & Marketing · Conversion funnel · WTD'},
+  markets:  {title:'Markets & Corridors',sub:'Audience: Trading & Supply · GMV by geography · WTD vs Plan'},
+  marketing:{title:'Marketing',sub:'Audience: Marketing & Finance · Channel ROAS & portfolios · WTD'},
+  supply:   {title:'Supply',sub:'Audience: Supply & Trading · Health index, economics · WTD'},
+  channels: {title:'Channels deep dive',sub:'Audience: Marketing · PS, Partnerships, SEO · CW21'},
+  alerts:   {title:'Alerts & actions',sub:'Consolidated watch stack + rolling action log · CW21'},
+};
+
+function nav(id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const ni=document.getElementById('nav-'+id);if(ni)ni.classList.add('active');
+  const vi=document.getElementById('view-'+id);if(vi)vi.classList.add('active');
+  document.getElementById('page-title').textContent=META[id].title;
+  document.getElementById('page-sub').textContent=META[id].sub;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setPeriod(el){
+  el.closest('.period-tabs').querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function geoTab(id,el){
+  el.closest('.geo-tabs').querySelectorAll('.geo-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.geo-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('geo-'+id).classList.add('active');
+}
+</script>
+</body>
+</html>
